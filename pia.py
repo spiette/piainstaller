@@ -1,20 +1,29 @@
 #!/usr/bin/env python
 
+"""
+Create a selected list of vpn entries in the Network Manager
+
+# Copyright 2017 Simon Piette under the GPL v2.1
+"""
+
+from __future__ import print_function
 import sys
 import json
 import yaml
-import requests
-import uuid
 import subprocess
 import os
 import stat
 import hashlib
+import argparse
+
+import requests
 
 NOOP = False
 VERBOSE = True
-YAML_CONFFILE=os.path.expanduser('~/.pia.yml')
-TRUE = [ 'yes', True, 'true' ]
+TRUE = ['yes', True, 'true']
+YAML_CONFFILE = os.path.expanduser('~/.pia.yml')
 CA_CERT_PATH = os.path.expanduser('~/.cert')
+BASE_URL = 'https://www.privateinternetaccess.com'
 
 """
 included_servers:
@@ -27,7 +36,7 @@ included_servers:
     - US Silicon Valley
 """
 
-yaml_config = """---
+YAML_CONFIG = """---
 pia_username: pxxxxxxx
 strong_security: true
 pia_tcp: no
@@ -35,22 +44,25 @@ included_servers:
     - CA Montreal
 """
 
-def expand_config(yaml_config):
-    return yaml_config
 
 def parse_config(yaml_config):
+    """
+    This will parse a yaml file and complete the various common configuration
+    items. If the file doesn't exists, create a sample one.
+    """
+
     if os.path.exists(YAML_CONFFILE):
         with open(YAML_CONFFILE, 'r') as fh:
             yaml_config = fh.read()
         config = yaml.load(yaml_config)
-        if config.has_key('strong_security') and config['strong_security'] in TRUE:
+        if 'strong_security' in config and config['strong_security'] in TRUE:
             sys.stderr.write('Strong encryption used.\n')
             config.update({
                 'pia_cert': 'ca.rsa.4096.crt',
                 'pia_cipher': 'AES-256-CBC',
                 'pia_auth': 'SHA256',
                 })
-            if config.has_key('pia_tcp') and config['pia_tcp'] in TRUE:
+            if 'pia_tcp' in config and config['pia_tcp'] in TRUE:
                 config['pia_port'] = 501
             else:
                 config['pia_port'] = 1197
@@ -61,7 +73,7 @@ def parse_config(yaml_config):
                 'pia_cipher': 'AES-128-CBC',
                 'pia_auth': 'SHA1',
                 })
-            if config.has_key('pia_tcp') and config['pia_tcp'] in TRUE:
+            if 'pia_tcp' in config and config['pia_tcp'] in TRUE:
                 config['pia_port'] = 502
             else:
                 config['pia_port'] = 1198
@@ -76,39 +88,73 @@ def parse_config(yaml_config):
         sys.exit(1)
     return config
 
+
 def create_vpn_connection(name):
-    nmcli = 'nmcli connection add con-name name type vpn ifname tun0 vpn-type openvpn'.split()
+    """
+    Create a new OpenVPN connection
+    """
+    nmcli = ("nmcli connection add con-name name" +
+             "type vpn ifname tun0 vpn-type openvpn").split()
     nmcli[4] = '%s' % name
     if VERBOSE:
         nmcli[4] = '"%s"' % name
         print(" ".join(nmcli))
-        nmcli[4] = '%s' % name
     if not NOOP:
-        r = subprocess.call(nmcli)
+        nmcli[4] = '%s' % name
+        return subprocess.call(nmcli)
 
-def modify_vpn_connection(name,config):
-    vpn_data = "ca = {pia_cert_path}/{pia_cert}, remote-cert-tls = server, username = {pia_username}, port = {pia_port}, cipher = {pia_cipher}, remote = {pia_host}, password-flags = 0, auth = {pia_auth}, connection-type = password"
+
+def modify_vpn_connection(name, config):
+    """
+    Set an OpenVPN connection attributes
+    """
+    vpn_data = ("ca = {pia_cert_path}/{pia_cert}, "
+                "remote-cert-tls = server, "
+                "username = {pia_username}, "
+                "port = {pia_port}, "
+                "cipher = {pia_cipher}, "
+                "remote = {pia_host}, "
+                "password-flags = 0, "
+                "auth = {pia_auth}, "
+                "comp-lzo = yes, "
+                "connection-type = password")
     nmcli = 'nmcli connection modify name vpn.data vpn_data'.split()
     nmcli[3] = '%s' % name
     nmcli[-1] = vpn_data.format(**config)
     if VERBOSE:
         nmcli[3] = '"%s"' % name
         print(" ".join(nmcli))
-        nmcli[3] = '%s' % name
     if not NOOP:
-        r = subprocess.call(nmcli)
+        nmcli[3] = '%s' % name
+        return subprocess.call(nmcli)
+
 
 def get_servers():
-    r = requests.get('https://www.privateinternetaccess.com/vpninfo/servers?version=24')
+    """
+    Retrieve the latest server list
+    """
+    url = '{baseurl}/vpninfo/servers?version=24'.format(baseurl=BASE_URL)
+    r = requests.get(url)
     data = json.loads(r.content.split('\n')[0])
     return data
 
+
 def sha256sum(content):
+    """
+    Simple wrapper for return the hexdigest of a sha256 hash
+    """
     return hashlib.sha256(content).hexdigest()
 
+
 def get_cacert(config):
+    """
+    Ensure the CA cert file is at the right location, have the proper
+    permissions and contains the proper certificate. Idempotent.
+    """
     cert_file = os.path.join(config['pia_cert_path'], config['pia_cert'])
-    url = 'https://www.privateinternetaccess.com/openvpn/%s' % config['pia_cert']
+    url = '{baseurl}/openvpn/{cert}'.format(
+        baseurl=BASE_URL,
+        cert=config['pia_cert'])
     r = requests.get(url)
     if os.path.exists(cert_file):
         with open(cert_file, 'r') as fh:
@@ -119,21 +165,45 @@ def get_cacert(config):
         st = os.stat(cert_file).st_mode
         if st & stat.S_IWOTH == 0 or st & stat.S_IWGRP == 0:
             if not NOOP:
-                os.chmod(cert_file, int('100644', 8) )
+                os.chmod(cert_file, int('100644', 8))
     else:
         with open(cert_file, 'w') as fh:
             fh.write(r.content)
 
-if __name__ == '__main__':
-    config = parse_config(yaml_config)
+
+def parse_args():
+    " parse command-line arguments "
+    parser = argparse.ArgumentParser(
+        description='Create PIA VPN connections in the NetworkManager')
+    parser.add_argument('-v', '--verbose', action='store_true',
+                        help='print out the nmcli commands')
+    parser.add_argument('-n', '--noop', action='store_true',
+                        help='run with no changes made')
+
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    " main function "
+    args = parse_args()
+    print(type(args))
+    print(args.noop)
+    # print(args['noop'])
+    # print(args['verbose'])
+    sys.exit(1)
+    config = parse_config(YAML_CONFIG)
     get_cacert(config)
     data = get_servers()
     for k in data.keys():
         if k != 'info' and data[k]['name'] in config['included_servers']:
-            print data[k]['name'] + ': ' + data[k]['dns']
+            print(data[k]['name'] + ': ' + data[k]['dns'])
 
             config['name'] = 'PIA - ' + data[k]['name'],
             config['pia_host'] = data[k]['dns']
             if not NOOP:
-                create_vpn_connection(config['name'])
-                modify_vpn_connection(config['name'], config)
+                if create_vpn_connection(config['name']) == 0:
+                    modify_vpn_connection(config['name'], config)
+
+if __name__ == '__main__':
+    main()
