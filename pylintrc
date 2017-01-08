@@ -1,0 +1,7 @@
+[BASIC]
+good-names=i,j,k,ex,r,Run,_,fh,st
+
+[REPORTS]
+# set the output format. Available formats are text, parseable, colorized and
+# html
+output-format=colorized
