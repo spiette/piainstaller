@@ -126,11 +126,8 @@ def modify_vpn_connection(args, name, config):
     nmcli = 'nmcli connection modify name vpn.data vpn_data'.split()
     nmcli[3] = '%s' % name
     nmcli[-1] = vpn_data.format(**config)
-    if VERBOSE:
-        nmcli[3] = '"%s"' % name
-        print(" ".join(nmcli))
-    if not NOOP:
-        nmcli[3] = '%s' % name
+    logging.info(" ".join(nmcli))
+    if not args.noop:
         return subprocess.call(nmcli)
 
 
@@ -170,7 +167,7 @@ def get_cacert(args, config):
                         fh.write(r.content)
         st = os.stat(cert_file).st_mode
         if st & stat.S_IWOTH == 0 or st & stat.S_IWGRP == 0:
-            if not NOOP:
+            if not args.noop:
                 os.chmod(cert_file, int('100644', 8))
     else:
         with open(cert_file, 'w') as fh:
@@ -187,21 +184,18 @@ def parse_args():
                         help='run with no changes made')
 
     args = parser.parse_args()
-    global NOOP
-    global VERBOSE
+    datefmt = '%m/%d/%Y %I:%M:%S %p %Z'
     if args.noop is True:
-        NOOP = True
         args.verbose = True
     if args.verbose is True:
-        VERBOSE = True
+        logging.basicConfig(level=logging.INFO,
+                            format='%(asctime)s %(message)s', datefmt=datefmt)
     return args
 
 
 def main():
     " main function "
     args = parse_args()
-    print(args)
-    sys.exit(1)
     config = parse_config(args)
     get_cacert(args, config)
     data = get_servers()
