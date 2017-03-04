@@ -1,0 +1,21 @@
+CHANGES
+=======
+
+* updated requirements.txt
+* dry-run the nmcli commands
+* fix bytes/string handling
+* use args for noop and verbose
+* fix modify_vpn_connection args
+* fix nmcli invocation
+* add logging
+* Use TO and MTL as default
+* requirements.txt
+* pbr setup.{cfg,py}
+* use argparse defaults instead of constants
+* updated to python3
+* gitignore distutils artifacts
+* README.rst
+* pylintrc for the win
+* pass pylint
+* gitignore
+* working version
