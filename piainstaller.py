@@ -207,11 +207,10 @@ def main():
 
             config['name'] = 'PIA - ' + data[k]['name'],
             config['pia_host'] = data[k]['dns']
-            if not args.noop:
-                if create_vpn_connection(args=args, name=config['name']) == 0:
-                    modify_vpn_connection(args=args,
-                                          name=config['name'],
-                                          config=config)
+            if create_vpn_connection(args=args, name=config['name']) == 0:
+                modify_vpn_connection(args=args,
+                                      name=config['name'],
+                                      config=config)
 
 if __name__ == '__main__':
     main()
