@@ -137,7 +137,7 @@ def get_servers():
     """
     url = '{baseurl}/vpninfo/servers?version=24'.format(baseurl=BASE_URL)
     r = requests.get(url)
-    data = json.loads(r.content.split('\n')[0])
+    data = json.loads(r.content.decode().split('\n')[0])
     return data
 
 
@@ -145,6 +145,8 @@ def sha256sum(content):
     """
     Simple wrapper for return the hexdigest of a sha256 hash
     """
+    if isinstance(content, str):
+        content = content.encode('utf-8')
     return hashlib.sha256(content).hexdigest()
 
 
@@ -160,10 +162,10 @@ def get_cacert(args, config):
     logging.info('GET {}'.format(url))
     r = requests.get(url)
     if os.path.exists(cert_file):
-        with open(cert_file, 'r') as fh:
+        with open(cert_file, 'r', encoding='utf-8') as fh:
             if sha256sum(r.content) != sha256sum(fh.read()):
-                if not NOOP:
-                    with open(cert_file, 'w') as fh:
+                if not args.noop:
+                    with open(cert_file, 'w', encoding='utf-8') as fh:
                         fh.write(r.content)
         st = os.stat(cert_file).st_mode
         if st & stat.S_IWOTH == 0 or st & stat.S_IWGRP == 0:
