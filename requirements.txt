@@ -1,2 +1,10 @@
+appdirs==1.4.2
+packaging==16.8
+pbr==2.0.0
+pip==9.0.1
+pyparsing==2.1.10
 PyYAML==3.11
 requests==2.10.0
+setuptools==34.3.1
+six==1.10.0
+wheel==0.30.0a0
