@@ -1,2 +1,7 @@
 *.sw?
 *.py?
+*.egg-info
+/setup
+/venv
+/.egg*
+/dist
