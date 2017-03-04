@@ -15,6 +15,7 @@ import os
 import stat
 import hashlib
 import argparse
+import logging
 
 import requests
 
@@ -103,11 +104,8 @@ def create_vpn_connection(args, name):
     nmcli = ("nmcli connection add con-name name" +
              "type vpn ifname tun0 vpn-type openvpn").split()
     nmcli[4] = '%s' % name
-    if VERBOSE:
-        nmcli[4] = '"%s"' % name
-        print(" ".join(nmcli))
-    if not NOOP:
-        nmcli[4] = '%s' % name
+    logging.info(" ".join(nmcli))
+    if not args.noop:
         return subprocess.call(nmcli)
 
 
@@ -162,6 +160,7 @@ def get_cacert(args, config):
     url = '{baseurl}/openvpn/{cert}'.format(
         baseurl=BASE_URL,
         cert=config['pia_cert'])
+    logging.info('GET {}'.format(url))
     r = requests.get(url)
     if os.path.exists(cert_file):
         with open(cert_file, 'r') as fh:
