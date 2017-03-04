@@ -76,6 +76,7 @@ def parse_config(args):
         pia_tcp: no
         included_servers:
             - CA Montreal
+            - CA Toronto
         """
         config = yaml.load(yaml_config)
 
