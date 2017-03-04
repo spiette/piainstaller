@@ -101,7 +101,7 @@ def create_vpn_connection(args, name):
     """
     Create a new OpenVPN connection
     """
-    nmcli = ("nmcli connection add con-name name" +
+    nmcli = ("nmcli connection add con-name name " +
              "type vpn ifname tun0 vpn-type openvpn").split()
     nmcli[4] = '%s' % name
     logging.info(" ".join(nmcli))
