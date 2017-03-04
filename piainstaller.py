@@ -109,7 +109,7 @@ def create_vpn_connection(args, name):
         return subprocess.call(nmcli)
 
 
-def modify_vpn_connection(arg, name, config):
+def modify_vpn_connection(args, name, config):
     """
     Set an OpenVPN connection attributes
     """
