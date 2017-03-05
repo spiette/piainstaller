@@ -1,6 +1,8 @@
 CHANGES
 =======
 
+* bump to version 0.2
+* Updated ChangeLog
 * add /build to .gitignore
 * set filehierachy into namespace
 * ChangeLog
