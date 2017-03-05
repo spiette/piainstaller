@@ -1,6 +1,10 @@
 CHANGES
 =======
 
+* add /build to .gitignore
+* set filehierachy into namespace
+* ChangeLog
+* AUTHORS
 * updated requirements.txt
 * dry-run the nmcli commands
 * fix bytes/string handling
