@@ -73,6 +73,7 @@ def parse_config(args):
         yaml_config = """---
         pia_username: pxxxxxxx
         strong_security: true
+        pia_cert_path: ~/.cert
         pia_tcp: no
         included_servers:
             - CA Montreal
@@ -82,9 +83,8 @@ def parse_config(args):
 
         config['pia_cert_path'] = CA_CERT_PATH
         if noop is not True:
-            if verbose:
-                sys.stderr.write(
-                    'Creating configuration file: %s\n' % yaml_conffile)
+            sys.stderr.write(
+                'Creating configuration file: %s\n' % yaml_conffile)
             with open(yaml_conffile, 'w') as fh:
                 fh.write(yaml_config)
                 sys.stderr.write('Edit the file and rerun this script.\n')
@@ -154,7 +154,12 @@ def get_cacert(args, config):
     Ensure the CA cert file is at the right location, have the proper
     permissions and contains the proper certificate. Idempotent.
     """
-    cert_file = os.path.join(config['pia_cert_path'], config['pia_cert'])
+    try:
+        cert_file = os.path.join(
+            os.path.expanduser(config['pia_cert_path']),
+            config['pia_cert'])
+    except KeyError:
+        sys.stderr.write('Missing pia_cert_path in the configuration file.\n')
     url = '{baseurl}/openvpn/{cert}'.format(
         baseurl=BASE_URL,
         cert=config['pia_cert'])
