@@ -42,7 +42,6 @@ def parse_config(args):
 
     yaml_conffile = os.path.expanduser('~/.pia.yml')
     noop = args.noop
-    verbose = args.verbose
     if os.path.exists(yaml_conffile):
         with open(yaml_conffile, 'r') as fh:
             yaml_config = fh.read()
